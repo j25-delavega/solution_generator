@@ -1,0 +1,23 @@
+
+9
+	README.md,8/e/8ec9a00bfd09b3190ac6b22251dbb1aa95a0579d
+F
+constants/constants.py,e/8/e8e5e7e940e123b94ff1d1cfc31ff214eb0ee370
+G
+solver/random/random.py,8/3/83f7a7af4f98dde84077136fa27e6ad3b101f26e
+d
+4instances/jadlog_OR/jadlog2_OptimizationRequest.json,d/f/df035700f559e90e23de11f1f62cb8daa97e0bc8
+J
+solver/exacts/tsp_model.py,1/9/19042ca0cc0e8548bc17ca5ef59fb842f40fa133
+Q
+!output/jadlog3_output_summary.txt,4/3/43f16164349e40a139c705c66ace6b7b4c245c8d
+T
+$output/jadlog2_output_summary_00.txt,7/2/726a4b8f7b7ca8bec6797652673734cec6b61de3
+Q
+!output/jadlog4_output_summary.txt,8/7/87893566225827bc544441d72ed534ee639210a2
+Q
+!output/jadlog1_output_summary.txt,3/8/3867292b4029c1eac3b6ae441555f53dbad78626
+s
+Csolver/heuristic/simulated_annealing/visualize_tsp/visualize_tsp.py,d/6/d615ec5679f0537ca8d775f73d48a84614336eeb
+P
+ output/survey_output_summary.txt,a/a/aa78808780a71d2706d7a4dd407340b731cfdb8e

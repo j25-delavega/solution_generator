@@ -1,97 +1,51 @@
 import json
 import os
+from timeit import default_timer as timer
 
-import numpy as np
-import matplotlib.pyplot as plt
+# import numpy as np
+# import oapackage
 
 from solver.random.random import random_solution
-from utils.utils import build_output, build_solution_file_for_qgis, euclidean_distance_matrix, request_cleaner
-from metrics.visual_attractiveness.route_complexity import bending_energy_metric, crossings_metric, \
-    long_distance_index_metric_using_road_network, long_distance_index_metric_using_euclidean_distance
-from metrics.traditional.driving_time import driving_time_using_road_network, \
-    driving_time_using_euclidean_distance
+from utils.utils import build_output, optimization_request_cleaner, build_solution_file_for_qgis_using_the_response
 from solver.heuristic.ORTools.ORTools import ORTools_run
 from solver.heuristic.simulated_annealing.anneal import SimAnneal
 from solver.heuristic.two_opt.two_opt import TwoOpt
 from solver.exacts.tsp_model import create_and_solve_the_model
+from output.output_format import output_file
 
 if __name__ == '__main__':
-    path = "instances/jadlog_OR/"
+
+    # build_solution_file_for_qgis_using_the_response()
+
+
+    path = "instances/jadlog_ORs/"
     requests = os.listdir(path)
 
-    for request in requests:
+    requests_aux = [requests[len(requests) - 1]]
+
+    for request in requests_aux:
         with open(path + request, 'r') as wor_file:
-            optimization_request = json.load(wor_file)
+            instance = json.load(wor_file)
 
-        data = request_cleaner(optimization_request)
+        data = optimization_request_cleaner(instance)
 
-        output = []
         name = request.split('_')[0]
 
-        for seed in range(0, 10):
+        for seed in range(0, 1):
+            start = timer()
+            r_solution = random_solution(data['noNodes'], seed)
+            sa_alg = SimAnneal(data, r_solution, seed, -1, -1, -1, stopping_iter=50*len(r_solution))
+            sa_alg.perform()
+            sa_alg.visualize_routes()
+            end = timer()
+            build_output(output_file(seed, sa_alg.best_solution, data), name)
+            print(" Running time: " + str(end - start))
 
-            print("\n")
-
-            if seed < 7:
-                r_solution = random_solution(data['noNodes'], seed)
-                if seed < 5:
-                    print(" >> Simulated Annealing")
-                    alg = SimAnneal(data, r_solution, stopping_iter=5000)
-                else:
-                    print(" >> Two Opt")
-                    alg = TwoOpt(data, r_solution, stopping_iter=2)
-            elif 7 <= seed < 9:
-                r_solution = ORTools_run(data)
-                if seed == 7:
-                    print(" >> Simulated Annealing")
-                    alg = SimAnneal(data, r_solution, stopping_iter=5000)
-                else:
-                    print(" >> Two Opt")
-                    alg = TwoOpt(data, r_solution, stopping_iter=2)
-            else:
-                print(" >> Two Opt")
-                r_solution = create_and_solve_the_model(data)
-                alg = TwoOpt(data, r_solution, stopping_iter=2)
-
-            alg.anneal()
-            alg.visualize_routes()
-            # alg.plot_learning()
-
-            solution = alg.best_solution
-
-            build_solution_file_for_qgis(solution, data, name)
-
-            output.append(seed)
-
-            for point in solution:
-                output.append(point)
-
-            # Traditional metrics
-            dt_using_rn = driving_time_using_road_network(solution, data)
-            print("Driving time using road network: " + str(dt_using_rn))
-            output.append(dt_using_rn)
-
-            dt_using_ed = driving_time_using_euclidean_distance(solution, data)
-            print("Driving time using euclidean distance: " + str(dt_using_ed))
-            output.append(dt_using_ed)
-
-            # Route simplicity metrics
-            bending_energy = bending_energy_metric(solution, data)
-            print("Total bending energy: " + str(bending_energy))
-            output.append(bending_energy)
-
-            number_of_crossings = crossings_metric(solution, data)
-            print("Total crossings: " + str(number_of_crossings))
-            output.append(number_of_crossings)
-
-            total_ldi_using_road_network = long_distance_index_metric_using_road_network(solution, data)
-            print("Total long distance index using road network: " + str(total_ldi_using_road_network))
-            output.append(total_ldi_using_road_network)
-
-            total_ldi_using_euclidean_distance = long_distance_index_metric_using_euclidean_distance(solution, data)
-            print("Total long distance index using euclidean distance: " + str(total_ldi_using_euclidean_distance))
-            output.append(total_ldi_using_euclidean_distance)
-
-            build_output(output, name)
-
-            output.clear()
+            # # two_opt_alg = TwoOpt(data, r_solution, seed, name, stopping_iter=2)
+            # # two_opt_alg.visualize_routes(r_solution)
+            # two_opt_alg.visualize_routes(sa_alg.best_solution)
+            # # two_opt_alg.perform()
+            # two_opt_alg.visualize_routes()
+            # # end = timer()
+            # # build_output(output_file(seed, two_opt_alg.best_solution, data), name)
+            # # print(" Running time: " + str(end - start))

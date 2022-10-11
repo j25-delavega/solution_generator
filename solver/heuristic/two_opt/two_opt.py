@@ -2,15 +2,17 @@ import math
 import random
 
 from metrics.traditional.driving_time import driving_time
-from .visualize_tsp.visualize_tsp import plotTSP
+from output.output_format import output_file
+from .visualize_tsp.visualize_tsp import plot_TSP
 import matplotlib.pyplot as plt
 from metrics.visual_attractiveness.crossings import crossings
 from metrics.visual_attractiveness.bending_energy import bending_energy
 from metrics.visual_attractiveness.long_distance_index import long_distance_index
+from utils.utils import build_output
 
 
 class TwoOpt(object):
-    def __init__(self, data, initial_solution, T=-1, alpha=-1, stopping_T=-1, stopping_iter=-1):
+    def __init__(self, data, initial_solution, seed, name, T=-1, alpha=-1, stopping_T=-1, stopping_iter=-1):
         self.current_fitness = None
         self.current_solution = None
         self.data = data
@@ -26,6 +28,8 @@ class TwoOpt(object):
         self.best_fitness = float("Inf")
         self.fitness_list = []
         self.warm_solution = initial_solution
+        self.seed = seed
+        self.name = name
 
     def initial_solution(self):
         """
@@ -62,7 +66,12 @@ class TwoOpt(object):
         Total distance of the current solution path.
         """
         distances = self.data['euclidean_distances']
-        return driving_time(solution, distances)
+        return driving_time(solution, distances, False)
+        ''' + 0.1 * long_distance_index(solution, self.data[
+            'real_distances']) + 10 * bending_energy(solution, self.data[
+            'points'])  # + 100 * long_distance_index(solution, self.data['real_distances'])'''
+        # + ( 10 * bending_energy(solution, self.data['points']))
+        # + 100 * long_distance_index(solution, self.data['real_distances'])
 
     def p_accept(self, candidate_fitness):
         """
@@ -85,7 +94,7 @@ class TwoOpt(object):
             if random.random() < self.p_accept(candidate_fitness):
                 self.current_fitness, self.current_solution = candidate_fitness, candidate
 
-    def anneal(self):
+    def perform(self):
         """
         Execute simulated annealing algorithm.
         """
@@ -109,8 +118,17 @@ class TwoOpt(object):
         while self.T >= self.stopping_temperature and self.iteration < self.stopping_iter:
             # print("iteration: " + str(self.iteration))
             candidate = list(self.current_solution)
-            new_candidate = self.two_opt(candidate)
-            self.accept(new_candidate)
+
+            two_opt_solution = self.two_opt_run(candidate)
+            self.visualize_routes(two_opt_solution)
+
+            exchange_solution = self.exchange_run(two_opt_solution)
+            self.visualize_routes(exchange_solution)
+
+            reallocate_solution = self.reallocate_run(exchange_solution)
+            self.visualize_routes(reallocate_solution)
+
+            self.accept(reallocate_solution)
             self.T *= self.alpha
             self.iteration += 1
 
@@ -130,13 +148,30 @@ class TwoOpt(object):
             self.T = self.T_save
             self.iteration = 1
             self.current_solution, self.current_fitness = self.initial_solution()
-            self.anneal()
+            self.perform()
 
-    def visualize_routes(self):
+    def exchange_run(self, current_solution):
+        best_solution = current_solution
+        improved = True
+        while improved:
+            improved = False
+            for i in range(1, len(current_solution)):
+                for j in range(1, len(current_solution)):
+                    if j == i: continue  # changes nothing, skip then
+                    new_route = current_solution[:]
+                    new_route[i] = current_solution[j]
+                    new_route[j] = current_solution[i]
+                    if self.fitness(new_route) < self.fitness(best_solution):
+                        best_solution = new_route
+                        improved = True
+            current_solution = best_solution
+        return best_solution
+
+    def visualize_routes(self, solution):
         """
         Visualize the TSP route with matplotlib.
         """
-        plotTSP([self.best_solution], self.data['coords'])
+        plot_TSP(solution, self.data, self.seed)
 
     def plot_learning(self):
         """
@@ -147,19 +182,51 @@ class TwoOpt(object):
         plt.xlabel("Iteration")
         plt.show()
 
-    def two_opt(self, route):
+    def new_route_in_reallocate_when_i_less_than_j(self, current_solution, i, j):
+        new_route = current_solution[:]
+        new_route[i:j] = current_solution[i + 1:j + 1]
+        new_route[j] = current_solution[i]
+        return new_route
+
+    def new_route_in_reallocate_when_j_less_than_i(self, current_solution, i, j):
+        new_route = current_solution[:]
+        new_route[j] = current_solution[i]
+        new_route[j + 1:i + 1] = current_solution[j:i]
+        return new_route
+
+    def reallocate_run(self, current_solution):
+        best_solution = current_solution
+        improved = True
+        while improved:
+            improved = False
+            for i in range(1, len(current_solution) - 1):
+                for j in range(2, len(current_solution)):
+                    if j != i:
+                        if i < j:
+                            new_route = self.new_route_in_reallocate_when_i_less_than_j(current_solution, i, j)
+                        else:
+                            new_route = self.new_route_in_reallocate_when_j_less_than_i(current_solution, i, j)
+
+                        if self.fitness(new_route) < self.fitness(best_solution):
+                            best_solution = new_route
+                            improved = True
+            current_solution = best_solution
+        return best_solution
+
+    def two_opt_run(self, route):
         best = route
         improved = True
         while improved:
             improved = False
             for i in range(1, len(route) - 2):
-                for j in range(i + 1, len(route)):
+                for j in range(i + 1,
+                               len(route) + 1):  # range(i + 1, len(route)): el 1 es para tambien cambiar la última visita
                     if j - i == 1: continue  # changes nothing, skip then
                     new_route = route[:]
                     new_route[i:j] = route[j - 1:i - 1:-1]  # this is the 2woptSwap
                     if self.fitness(new_route) < self.fitness(best):
                         best = new_route
-                        # print("best fitness: " + str(self.fitness(best)))
+                        # build_output(output_file(self.seed, new_route, self.data), self.name)
                         improved = True
             route = best
         return best

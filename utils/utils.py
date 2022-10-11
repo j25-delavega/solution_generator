@@ -1,4 +1,5 @@
 import math
+import os
 
 import numpy as np
 from scipy.spatial import distance
@@ -17,7 +18,7 @@ def build_output(output, request_name):
     f.close()
 
 
-def build_solution_file_for_qgis(solution, request, request_name):
+def build_solution_file_for_qgis_using_the_request(solution, request, request_name):
     output_files = "qgis/"
 
     points = request['points']
@@ -33,6 +34,34 @@ def build_solution_file_for_qgis(solution, request, request_name):
         f.write(str(position) + "\t" + str(point['lon']) + "\t" + str(point['lat']) + "\n")
 
     f.close()
+
+
+def build_solution_file_for_qgis_using_the_response():
+    path = "responses/"
+    output_files = "qgis/"
+    responses = os.listdir(path)
+
+    for resp in responses:
+        with open(path + resp, 'r') as wor_file:
+            response = json.load(wor_file)
+
+        file_name = str(resp).split('.json')[0]
+
+        vehicles = response["vehicles"]
+        f = open(output_files + file_name + ".txt", "w+")
+        f.write(str("vehicle_id" + "\t" + "tour_id" + "\t" + "route" + "\t" + "ident" + "\t" + "lon" + "\t" + "lat" + "\n"))
+
+        route_count = 0
+        for vehicle_id in range(0, len(vehicles)):
+            tours = vehicles[vehicle_id]["tours"]
+            for tour_id in range(0, len(tours)):
+                route_count += 1
+                nodes = tours[tour_id]["nodes"]
+                for node_id in range(1, len(nodes) - 1):
+                    f.write(str(vehicle_id) + "\t" + str(tour_id) + "\t" + str(route_count) + "\t" + str(nodes[node_id]["order"]) + "\t" + str(nodes[node_id]["lon"]) + "\t" + str(nodes[node_id]["lat"]) + "\n")
+        f.close()
+
+
 
 
 def build_or_solution_file_for_qgis(request, request_name):
@@ -96,7 +125,7 @@ def angle_between_two_vectors(first_vector, second_vector):
         print(first_vector)
         print(second_vector)
         print(dot_product)
-    return np.arccos(dot_product)
+    return math.pi - np.arccos(dot_product)
 
 
 def is_zero_vector(vector):
@@ -151,7 +180,7 @@ def points_remover(points, positions):
         del points[position]
 
 
-def request_cleaner(o_request):
+def optimization_request_cleaner(o_request):
     points = o_request['routingInfo']['routeList']
     distances_matrix = o_request['distances'][0]['distance_table']
     depot = o_request['depotInfo']['depotList'][0]

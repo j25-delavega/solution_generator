@@ -1,0 +1,5 @@
+
+Ppython:S1172",Remove the unused function parameter "seed".(í¢ú¸ûÿÿÿÿ8ü§İ¦»0
+ipython:S1854"JRemove this assignment to local variable 'point'; the value is never used.(ø¥8ü§İ¦»0
+rpython:S1542"NRename function "plot_TSP" to match the regular expression ^[a-z_][a-z0-9_]*$.(í¢ú¸ûÿÿÿÿ8ü§İ¦»0
+=python:S125"Remove this commented out code.(Ü¨ˆä8ü§İ¦»0

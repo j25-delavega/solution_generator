@@ -3,7 +3,6 @@ import random
 
 
 def solution(random_number_vector):
-
     n = len(random_number_vector)
     random_solution_to_TSP = [0]
     for i in range(1, n + 1):
@@ -30,3 +29,11 @@ def random_solution(n, seed):
     for r in range(0, n):
         random_number_vector.append(random.random())
     return solution(random_number_vector)
+
+
+if __name__ == '__main__':
+    random_number_vector = []
+    for r in range(0, 11):
+        random_number_vector.append(random.random())
+    runs = solution(random_number_vector)
+    print(runs)
